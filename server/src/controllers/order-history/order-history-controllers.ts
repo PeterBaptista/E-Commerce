@@ -5,14 +5,14 @@ import supabase from "../../supabase/supabase";
  * Função para buscar o histórico de pedidos de um usuário específico.
  */
 export const getOrderHistory = async (req: Request, res: Response) => {
-  const userId = req.params.userId;
+  //const userId = req.params.userId;
 
   try {
     // Consulta ao Supabase para buscar os pedidos do usuário
     const { data, error } = await supabase
       .from("order-history") // Certifique-se de que o nome da tabela está correto
       .select("*")
-      .eq("user_id", userId);
+      
 
     if (error) {
       console.error("Erro ao consultar o Supabase:", error.message);
