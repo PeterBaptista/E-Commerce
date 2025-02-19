@@ -1,121 +1,115 @@
 import { Given, Then, When } from "@cucumber/cucumber";
 import axios from "axios";
 import { expect } from "chai";
+import { spawn } from "child_process";
 import { parse } from "path";
 
+axios.defaults.validateStatus = status => status >= 200 && status <= 500;
 
 const BASE_URL = process.env.BASE_URL;
 
-Given('{string} não tem uma entrada {string}', async function (db, db_entry) {
-  try {
-    let response = await axios.get("http://localhost:3000/"+db);
-    
-    if (response.data.some(entry => entry.codename === db_entry)) {
-      let entry = response.data.find(entry => entry.codename === db_entry);
-      let id = entry ? entry.id : null;
-      await axios.delete("http://localhost:3000/"+db+"/"+id);
-    }
-    
-    response = await axios.get("http://localhost:3000/"+db);
-    
-    expect(response.data.some(entry => entry.codename === db_entry)).to.be.false;
+// COUPONS FEATURE
 
-  } catch (error) {
-    throw new Error("Fail on request");
-  }
+Given("cleanup", async function () {
+  let response = await axios.get("http://localhost:3000/coupons_test")
+
+    for (const entry of response.data) {
+      await axios.delete("http://localhost:3000/coupons_test"+"/"+entry.id);
+    }
+
+    response = await axios.get("http://localhost:3000/coupons_test");
+    expect(response.data.length).to.equal(0);
 });
 
-let getminbody = (db) => {
-  switch (db) {
-    case "Coupons":
-      return "{'name': 'name_','percentage': 10}";
-    }
-}
-
-Given('{string} tem uma entrada {string}', async function (db, db_entry) {
-  let body = getminbody(db).replace(/'/g, '"').replace("name_", db_entry);
-  let parsedBody = JSON.parse(body);
+Given('Existe um cupom com nome {string} e porcentagem {string}%', async function (name, percentage) {
+  let response = await axios.get("http://localhost:3000/coupons_test");
+  if (await response.data.some(entry => entry.codename === name)) {
+    return
+  }
   
-  try {
-    let response = await axios.get("http://localhost:3000/"+db);
-    
-    if (!response.data.some(entry => entry.codename === db_entry)) {
-      await axios.post("http://localhost:3000/"+db, parsedBody);
-    }
-    
-    response = await axios.get("http://localhost:3000/"+db);
-    
-    expect(response.data.some(entry => entry.codename === db_entry)).to.be.true;
-
-  } catch (error) {
-    throw new Error("Fail on request");
-  }
-});
-
-When('uma requisição {string} for enviada para {string} com o body: {string}', async function (type, db, body) {
-  let response;
-  let parsedBody;
-  
-  switch (type) {
-    case "GET":
-      response = await axios.get("http://localhost:3000"+db);
-      expect(response.status).to.equal(200);
-      break;
-      case "POST":  
-      parsedBody = JSON.parse(body.replace(/'/g, '"'));
-      response = await axios.post("http://localhost:3000/coupons", parsedBody);  
-      expect(response.status).to.equal(201);
-      
-      break;
-      case "PUT": 
-      parsedBody = JSON.parse(body.replace(/'/g, '"'));
-      response = await axios.put("http://localhost:3000"+db, parsedBody);
-      expect(response.status).to.equal(200);
-      break;
-      case "DELETE":
-        response = await axios.delete("http://localhost:3000"+db);
-        expect(response.status).to.equal(200);
-      break;
-    default:
-      throw new Error("Invalid request type");
-  }  
-});
-
-Then('{string} agora tem uma entrada {string}', async function (db, db_entry) {  
-  try {
-    let response = await axios.get("http://localhost:3000/"+db);
-    
-    expect(response.data.some(entry => entry.codename === db_entry)).to.be.true;
-
-  } catch (error) {
-    throw new Error("Fail on request");
-  }
-});
-
-Then('{string} agora não tem uma entrada {string}', async function (db, db_entry) {  
-  try {
-    let response = await axios.get("http://localhost:3000/"+db);
-    
-    expect(response.data.some(entry => entry.codename === db_entry)).to.be.false;
-
-  } catch (error) {
-    throw new Error("Fail on request");
-  }
-});
-
-Then('a entrada {string} de {string} tem no body: {string}', async function (db_entry, db, body) {
+  let body = "{ 'name': '"+name+"', 'percentage': "+percentage+" }";
   let parsedBody = JSON.parse(body.replace(/'/g, '"'));
-  
-  let response = await axios.get("http://localhost:3000/"+db);
-  let entry = response.data.find(entry => entry.codename === db_entry);
-
-  expect(entry).to.deep.include(parsedBody);
+      response = await axios.post("http://localhost:3000/coupons_test", parsedBody);
+  expect(response.status).to.equal(201);
 });
 
+Given('Não existe um cupom com nome {string} e porcentagem {string}%', async function (name, percentage) {
+  let response = await axios.get("http://localhost:3000/coupons_test");
+  if (response.data.some(entry => entry.codename === name)) {
+    let entry = response.data.find(entry => entry.codename === name);
+    let id = entry ? entry.id : null;
+    await axios.delete("http://localhost:3000/coupons_test/"+id);
+  }
+  
+  response = await axios.get("http://localhost:3000/coupons_test");
+  expect(response.data.some(entry => entry.codename === name)).to.be.false;
+});
 
+Given('{string} tem apenas {string} entradas', async function (db, ammount) {
+  let response = await axios.get("http://localhost:3000/"+db+"_test")
 
+  expect(response.data.length).to.equal(Number(ammount));
+});
 
+Then('{string} tem {string} entradas', async function (db, ammount) {
+  let response = await axios.get("http://localhost:3000/"+db+"_test")
 
+  expect(response.data.length).to.equal(Number(ammount));
+});
+
+let status = 0;
+
+When('requisitarem todos os cupons disponíveis', async function () {
+  let response = await axios.get("http://localhost:3000/coupons_test");  
+  status = response.status;
+  // expect(response.status).to.equal(200);  
+});
+
+When('requisitarem o cadastro de um cupom com o nome {string} e a porcentagem {string}%', async function (name, percentage) {
+  let body = "{ 'name': '"+name+"', 'percentage': "+percentage+" }"; 
+  let parsedBody = JSON.parse(body.replace(/'/g, '"'));
+  let response = await axios.post("http://localhost:3000/coupons_test", parsedBody);  
+  status = response.status;
+  // expect(response.status).to.equal(201);  
+});
+
+When('requisitarem a atualização de um cupom com o nome {string} e a porcentagem {string}%', async function (name, percentage) {
+  let body = "{ 'name': '"+name+"', 'percentage': "+percentage+" }"; 
+  let parsedBody = JSON.parse(body.replace(/'/g, '"'));
+  let response = await axios.put("http://localhost:3000/coupons_test", parsedBody);  
+  status = response.status;
+  // expect(response.status).to.equal(200);  
+});
+
+When('requisitarem a deleção de um cupom com o nome {string}', async function (name) {
+  let response = await axios.delete("http://localhost:3000/coupons_test/"+name);  
+  status = response.status;
+  // expect(response.status).to.equal(200);  
+});
+
+Then('Cupons tem uma entrada com nome {string} e porcentagem {string}%', async function (name, percentage) {
+  let response = await axios.get("http://localhost:3000/coupons_test");  
+  expect(response.data.some(entry => entry.codename === name)).to.be.true;
+  expect(response.data.some(entry => entry.percentage === Number(percentage))).to.be.true;
+});
+
+Then('Cupons não tem uma entrada com nome {string}', async function (name) {
+  let response = await axios.get("http://localhost:3000/coupons_test");  
+  expect(response.data.some(entry => entry.codename === name)).to.be.false;
+});
+
+Then('Uma mensagem de {string} é enviada', async function(status_str) {
+  switch (status_str) {
+    case "sucesso":
+      expect(status).to.be.oneOf([200, 201]);
+      break;
+    case "erro":
+      expect(status).to.be.oneOf([400, 404, 500]);
+      break;
+  }
+})
+
+// END OF COUPONS FEATURE
 
 Given("o usuário está na página de {string}", function (string) {
   switch (string) {
