@@ -19,13 +19,14 @@ Feature: Histórico de Pedidos
     When o sistema consulta todos os pedidos
     Then o sistema retorna todos os pedidos:
       | order_id | order_data | destination | status    | total_value |
-      | 10       | 2024-02-15 | Rua G, 201  | processing| 2049        |
+      | 10       | 2024-02-15 | Rua G, 201  | canceled  | 2049        |
       | 1        | 2023-10-01 | Rua A, 123  | delivered | 550         |
       | 2        | 2023-09-25 | Rua B, 456  | shipped   | 200         |
       | 6        | 2023-09-20 | Rua F, 404  | canceled  | 1689.2      |
       | 3        | 2023-09-20 | Rua C, 789  | pending   | 150         |
       | 4        | 2023-09-15 | Rua D, 101  | canceled  | 300         |
       | 5        | 2023-09-10 | Rua E, 202  | delivered | 100         |
+      | 11       | 2023-09-10 | Rua H, 120  | processing| 2973.32     |
 
   # Cenário de Serviço: Recuperar os 3 Pedidos Mais Recentes
   Scenario: Recuperar os 3 pedidos mais recentes do usuário
@@ -33,9 +34,8 @@ Feature: Histórico de Pedidos
     When o sistema consulta os 3 pedidos mais recentes do usuário
     Then o sistema retorna os seguintes pedidos:
       | order_id | order_data | destination   | status    | total_value |
-      | 10       | 2024-02-15 | Rua G, 201  | processing| 2049        |
-      | 1  | 2023-10-01 | Rua A, 123    | delivered | 550         |
-      | 2  | 2023-09-25 | Rua B, 456    | shipped   | 200         |
+      | 10       | 2024-02-15 | Rua G, 201    | canceled  | 2049        |
+      | 1        | 2023-10-01 | Rua A, 123    | delivered | 550         |
+      | 2        | 2023-09-25 | Rua B, 456    | shipped   | 200         |
       #| 3  | 2023-09-20 | Rua C, 789    | pending   | 150         |
 
-  
