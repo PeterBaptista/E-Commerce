@@ -26,6 +26,7 @@ Given("o usuário está na página {string}", function (page) {
 
 When("clica no pedido com ID {string}", async function (orderId) {
   const response = await axios.get(`http://localhost:3000/product-order-history?order_id=${orderId}`);
+  //const response = await axiosApi(`/product-order-history?order_id=${orderId}`);
   this.orderItems = response.data;
 });
 

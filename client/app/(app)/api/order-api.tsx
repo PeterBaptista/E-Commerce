@@ -8,8 +8,13 @@ const api = axios.create({
 });
 
 export const getOrders = async () => {
-  const response = await api.get("/order-history");
-  return response.data;
+  try {
+    const response = await api.get("/order-history");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar os pedidos:", error);
+    throw error;
+  }
 };
 
 /*
@@ -22,9 +27,7 @@ export const getOrderItemsToOrder = async (orderId: number) => {
 
 export const getOrderItemsToOrder = async (orderId: number) => {
   try {
-    const response = await api.get(
-      `/product-order-history?order_id=${orderId}`
-    );
+    const response = await api.get(`http://localhost:3000/product-order-history?order_id=${orderId}`);
     return response.data; // Retorna os dados brutos da API
   } catch (error) {
     console.error("Error fetching order items:", error);
@@ -33,7 +36,8 @@ export const getOrderItemsToOrder = async (orderId: number) => {
 };
 
 export const getOrderItems = async (orderId: string) => {
-  const response = await axiosApi(`/product-order-history?order_id=${orderId}`);
+  const response = await api.get(`http://localhost:3000/product-order-history?order_id=${orderId}`);
+  // const response = await axiosApi(`/product-order-history?order_id=${orderId}`);
   console.log(response);
   if (response.status === 500) throw new Error("Erro ao buscar itens");
   return response.data;

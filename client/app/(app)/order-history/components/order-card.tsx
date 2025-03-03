@@ -2,22 +2,17 @@
 import { axiosApi } from "@/lib/axios-client";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { getOrderItemsToOrder } from "../../api/order-api";
 
-interface OrderCardProps {
-  order: {
-    order_id: number;
-    order_data: string;
-    destination: string;
-    status: string;
-    total_value: number | string;
-  };
-  onViewDetails: (orderId: number) => void;
+interface Order {
+  order_id: number;
+  order_data: string;
+  destination: string;
+  status: string;
+  total_value: number | string;
 }
 
 interface OrderItem {
   id: string;
-  created_at: string;
   product_id: string;
   price_paid: string;
   amount: number;
@@ -25,155 +20,114 @@ interface OrderItem {
   image_url: string;
 }
 
-const fetchProductDetails = async (productId: string) => {
-  try {
-    const response = await axiosApi(`/products/${productId}`);
-
-    return await response.data;
-  } catch (error) {
-    console.error("Erro ao buscar produto:", error);
-    return null;
-  }
-};
+interface OrderCardProps {
+  order: Order;
+  onViewDetails: (orderId: number) => void;
+}
 
 const OrderCard: React.FC<OrderCardProps> = ({ order, onViewDetails }) => {
   const router = useRouter();
   const [items, setItems] = useState<OrderItem[]>([]);
-  const totalValue =
-    typeof order.total_value === "string"
-      ? parseFloat(order.total_value)
-      : order.total_value;
+  const defaultImage = "https://www.shutterstock.com/image-vector/no-image-available-picture-coming-600nw-2057829641.jpg";
 
-  // Função para carregar os itens do pedido e os detalhes dos produtos
-  const loadOrderItems = async () => {
-    try {
-      // Busca os itens do pedido
-      const orderItems = await getOrderItemsToOrder(order.order_id);
-
-      // Busca detalhes dos produtos em paralelo
-      const itemsWithDetails = await Promise.all(
-        orderItems.map(async (item: any) => {
-          const productDetails = await fetchProductDetails(item.product_id);
-          return {
-            ...item,
-            product_name: productDetails?.name || "Produto não disponível",
-            image_url:
-              productDetails?.image_url ||
-              "https://www.shutterstock.com/image-vector/no-image-available-picture-coming-600nw-2057829641.jpg",
-          };
-        })
-      );
-
-      // Limita a 4 itens para exibição
-      setItems(itemsWithDetails.slice(0, 4));
-    } catch (err) {
-      console.error("Erro ao carregar itens do pedido:", err);
-    }
-  };
-
-  // Carrega os itens quando o componente é montado
   useEffect(() => {
+    const loadOrderItems = async () => {
+      try {
+        // Busca direta dos itens do pedido
+        const orderResponse = await axiosApi.get(
+          `http://localhost:3000/product-order-history?order_id=${order.order_id}`
+        );
+        
+        const orderItems = orderResponse.data;
+
+        if (!Array.isArray(orderItems)) return;
+
+        // Busca das informações dos produtos
+        const productRequests = orderItems.map(async (item) => {
+          try {
+            const productResponse = await axiosApi.get(
+              `http://localhost:3000/products/${item.product_id}`
+            );
+            
+            return {
+              ...item,
+              product_name: productResponse.data.name,
+              image_url: productResponse.data.image_url
+            };
+            
+          } catch (error) {
+            return {
+              ...item,
+              product_name: "Produto não disponível",
+              image_url: defaultImage
+            };
+          }
+        });
+
+        const completeItems = await Promise.all(productRequests);
+        setItems(completeItems.slice(0, 4));
+        
+      } catch (err) {
+        console.error("Erro ao carregar itens:", err);
+      }
+    };
+
     loadOrderItems();
-  }, []);
+  }, [order.order_id]);
 
   const navigateToOrderDetails = () => {
     router.push(`/product-order-history?order_id=${order.order_id}`);
   };
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        border: "1px solid #ddd",
-        padding: "16px",
-        margin: "8px 0",
-        borderRadius: "12px",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-        transition: "0.3s",
-        cursor: "pointer",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        {/* Detalhes do pedido */}
+    <div className="bg-white border border-gray-300 p-4 m-2 rounded-lg shadow-sm hover:shadow-md transition duration-300 ease-in-out cursor-pointer">
+      <div className="flex justify-between">
+        {/* Order details */}
         <div>
-          <h3 style={{ marginBottom: "8px", color: "#333" }}>
+          <h3 className="mb-2 text-lg font-medium text-gray-800">
             Order #{order.order_id}
           </h3>
-          <div style={{ display: "flex" }}>
-            <p style={{ marginRight: "10px", color: "#666", fontSize: "14px" }}>
-              Order placed: {order.order_data}
-            </p>
-            <p style={{ marginRight: "10px", color: "#666", fontSize: "14px" }}>
-              Destination: {order.destination}
-            </p>
+          <div className="flex items-center mb-1 text-sm text-gray-600">
+            <p className="mr-2">Order placed: {order.order_data}</p>
+            <p>Destination: {order.destination}</p>
           </div>
-          <p style={{ color: "#666", fontSize: "14px" }}>
+          <p className="mb-2 text-sm text-gray-600">
             Status:{" "}
             <strong
-              style={{
-                color: order.status === "delivered" ? "#28a745" : "#dc3545",
-              }}
+              className={`font-bold ${
+                order.status === "delivered" ? "text-green-600" : "text-red-600"
+              }`}
             >
               {order.status}
             </strong>
           </p>
-          <p style={{ fontWeight: "bold", fontSize: "16px", color: "#000" }}>
-            Valor Total: R$ {totalValue.toFixed(2)}
+          <p className="mb-2 text-base font-bold text-black">
+            Total Value: $ {parseFloat(order.total_value.toString()).toFixed(2)}
           </p>
           <button
-            style={{
-              marginTop: "5px",
-              padding: "5px 10px",
-              fontSize: "14px",
-              background: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              transition: "0.3s",
-            }}
+            className="mt-1 px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition duration-300 ease-in-out"
             onClick={navigateToOrderDetails}
           >
             See details
           </button>
         </div>
 
-        {/* Imagens dos produtos */}
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-          }}
-        >
+        {/* Product images */}
+        <div className="flex gap-2">
           {items.length > 0 ? (
             items.map((item, index) => (
               <img
                 key={index}
                 src={item.image_url}
                 alt={item.product_name}
-                style={{
-                  width: "80px",
-                  height: "80px",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                }}
+                className="w-20 h-20 object-cover rounded-md"
               />
             ))
           ) : (
             <img
               src="https://www.shutterstock.com/image-vector/no-image-available-picture-coming-600nw-2057829641.jpg"
-              alt="Imagem padrão"
-              style={{
-                width: "80px",
-                height: "80px",
-                objectFit: "cover",
-                borderRadius: "8px",
-              }}
+              alt="Default image"
+              className="w-20 h-20 object-cover rounded-md"
             />
           )}
         </div>

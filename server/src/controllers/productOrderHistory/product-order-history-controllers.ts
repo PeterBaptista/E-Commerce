@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import { fetchProductOrderHistoryByOrderId } from "./utils/product-order-history-utils";
+import supabase from "../../supabase/supabase";
+import { ProductOrderHistory } from "./schemas/product-order-history-schema";
 
 export const getProductOrderHistory = async (req: Request, res: Response) => {
     try {
@@ -26,5 +28,57 @@ export const getProductOrderHistory = async (req: Request, res: Response) => {
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   };
+
+export const postProductOrderHistory = async (req: Request, res: Response) => {
+  const POSData: ProductOrderHistory = req.body
+
+  const { error, data } = await supabase
+    .from('product-order-history')
+    .insert({
+      order_id: POSData.order_id,
+      product_id: POSData.product_id,
+      price_paid: POSData.price_paid,
+      amount: POSData.amount,
+    })
+    .select()
+
+  if (error) res.status(500).json(error)
+
+  res.json(data?.[0] ?? null)
+};
+
+export const putProductOrderHistory = async (req: Request, res: Response) => {
+
+  const POSData: ProductOrderHistory = req.body
+
+  const { error, data } = await supabase
+    .from('product-order-history')
+    .update({
+      id: POSData.id,
+      order_id: POSData.order_id,
+      product_id: POSData.product_id,
+      price_paid: POSData.price_paid,
+      amount: POSData.amount,
+    }).eq('id', POSData.id)
+    .select()
+
+  if (error) res.status(500).json(error)
+
+  res.json(data?.[0] ?? null)
+
+};
+
+export const deleteProductOrderHistory = async (req: Request, res: Response) => {
+  const POSData: ProductOrderHistory = req.body
+
+  const { error } = await supabase
+  .from('product-order-history')
+  .delete()
+  .eq('id', POSData.id)
+
+  if (error) res.status(500).json(error)
+
+  res.send('Product on POS deleted successfully')
+};
 
   

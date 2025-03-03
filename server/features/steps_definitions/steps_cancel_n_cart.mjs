@@ -1,7 +1,6 @@
 import { Given, Then, When, setWorldConstructor } from "@cucumber/cucumber";
 import axios from "axios";
 import { expect } from "chai";
-import supabase from "../../src/supabase/supabase.ts"
 import { exec } from "child_process";
 
 let status_inicial;
@@ -15,68 +14,37 @@ let response;
          Given('O histórico de pedidos tem um pedido de ID {string} com status {string}', async function (id, status) {
             id_pedido = +id;
             status_inicial = status;
-            const { error } = await supabase
-                .from('order-history')
-                .insert({"order_id":id_pedido, "status":status_inicial})
-                .single();
-            if (error) return 'database_error';
+            body = {"id":id_pedido,"status":status_inicial}
+            await axios.post(`http://localhost:3000/order-history/`,body);
          });
 
          Given('associdados ao pedido há apenas o produto de ID {string} com {string} unidades', async function (product_id, unidades) {  
+            body = {"product_id":id_produto,"order_id":id_pedido,"amount":unidades}
             id_produto = product_id
-            const { error } = await supabase
-                .from('product-order-history')
-                .insert({"id":400, "order_id":id_pedido, "product_id":id_produto,"amount":+unidades})
-                .single();
-            if (error) return 'database_error';
+            await axios.post("http://localhost:3000/product-order-history/",body)
          });
 
 // Definição do número em estoque
          Given('o produto de ID {string} tem {string} unidade em estoque', async function (id, estoque_inicial) { 
-            const { error } = await supabase 
-                .from("products")
-                .update({"stock_quantity": +estoque_inicial})
-                .eq("id",id)
-                .single();
-            if (error) return "database_error";
+            body = {"stock_quantity":estoque_inicial};
+            await axios.put(`http://localhost:3000/products/${id}`,body);
          });
 
 
          When("tenta se cancelar o pedido de ID {string}", async function (pedido_cancelado) {
-            response = await axios.delete(`http://localhost:3000/cancel-order/${pedido_cancelado}`);
+            await axios.delete(`http://localhost:3000/cancel-order/${pedido_cancelado}`);
          });
 
 
          Then('No histórico de pedidos, o status atual do pedido é {string}', async function (status_esperado) {
-            const { data: status_obtido, error: fetch_status } = await supabase 
-                .from("order-history")
-                .select("status")
-                .eq("order_id",id_pedido)
-                .single();
-            if (fetch_status) return "database error";
+            await axios.get(`http://localhost:3000/order-history/${pedido_cancelado}`)
             expect(status_obtido.status).to.equal(status_esperado)
-            // Deleta o pedido e produto associado criados no given
-            const { error: product_order_deletion_error } = await supabase 
-                .from("product-order-history")
-                .delete()
-                .eq("id",400);
-            if (product_order_deletion_error) return "database_error"
-            const { error: order_deletion_error } = await supabase 
-                .from("order-history")
-                .delete()
-                .eq("order_id",id_pedido);
-            if (product_order_deletion_error) return "database_error"
          });
 
 
-         Then('o produto associado ao pedido tem atualmente {string} unidade em estoque', async function (estoque_esperado) {
-            const { data: estoque_final, error } = await supabase 
-                .from("products")
-                .select("stock_quantity")
-                .eq("id",id_pedido)
-                .single();
-            if (error) return "database_error";
-            expect(+estoque_esperado).to.eq(estoque_final.stock_quantity)
+         Then('o produto de ID "239a30b8-a117-4997-a52e-bcfb258636ba" tem atualmente "10" unidade em estoque', async function (id, estoque_esperado) {
+            response = await axios.get(`http://localhost:3000/products/${id}`)
+            expect(+estoque_esperado).to.eq(response.stock_quantity)
          });
 
 //Mensagem indicando algo

@@ -19,6 +19,8 @@
     "@supabase/supabase-js": "^2.48.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "dependences": "^0.0.1-security",
+    "dependencies": "^0.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "fastify": "^5.2.1",

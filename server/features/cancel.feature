@@ -6,7 +6,7 @@ Scenario: Cancelamento de pedido com sucesso
     And o produto de ID "239a30b8-a117-4997-a52e-bcfb258636ba" tem "1" unidade em estoque
     When tenta se cancelar o pedido de ID "987"
     Then No histórico de pedidos, o status atual do pedido é "canceled"
-    And o produto associado ao pedido tem atualmente "10" unidade em estoque 
+    And o produto de ID "239a30b8-a117-4997-a52e-bcfb258636ba" tem atualmente "10" unidade em estoque
 
 Scenario: Cancelamento de pedido com Falho
     Given O histórico de pedidos tem um pedido de ID "879" com status "delivered"
