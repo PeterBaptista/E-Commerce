@@ -1,17 +1,15 @@
 import { AppRootLayout } from "@/providers/app-root-layout";
 import { mount } from "cypress/react";
-import "./globals.css";
-import Home from "./page";
+import "./../../globals.css";
+import Payment from "./page";
 
 describe("Home Component", () => {
   it("Renderiza corretamente", () => {
     mount(
       <AppRootLayout>
-        <Home />
+        <Payment />
       </AppRootLayout>
     );
 
-    cy.contains("h2", "Livros").should("be.visible");
-    cy.contains("h2", "Eletrônicos").should("be.visible");
   });
 });

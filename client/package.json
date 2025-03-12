@@ -7,7 +7,8 @@
     "build": "npx next build",
     "start": "next start",
     "lint": "next lint",
-    "supabase-gen": "node supabase-gen.mjs"
+    "supabase-gen": "node supabase-gen.mjs",
+    "cypress" : "npx cypress open"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",

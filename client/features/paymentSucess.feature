@@ -13,7 +13,7 @@ And o usuário está para página de "Pagamento"
 
 Scenario 3: Remoção de cartão cadastrado com sucesso
 Given o usuário está na página de "Pagamento"
-And o usuário tem os cartões de apelido "cartão de painho" e "Cartão de mainha" cadastrados
+And o usuário tem os cartões de apelido "Cartão de painho" e "Cartão de mainha" cadastrados
 When o usuário seleciona a opção "Remover" o cartão "Cartão de painho"
 And o usuário está na página de "Pagamento"
 And o cartão de apelido "Cartão de painho" é removido da lista de cartões

@@ -188,10 +188,11 @@ export default function Payment() {
       <form onSubmit={handleSubmit}>
         <div className="flex justify-between gap-4 px-4">
           <button
+            id="select-card"
             type="button"
             onClick={() => setOptionSelected(1)}
             className={`h-20 items-center justify-center border-2 rounded-lg  shadow-md w-1/2 flex gap-2 ${
-              optionSelected === 1 ? "border-black" : "border-gray-300"
+              optionSelected === 1 ? "dark:border-gray-300 border-black" : ""
             }`}
           >
             <CreditCard />
@@ -201,7 +202,7 @@ export default function Payment() {
             type="button"
             onClick={() => setOptionSelected(2)}
             className={`h-20 items-center justify-center border-2 rounded-lg  shadow-md w-1/2 flex gap-2 ${
-              optionSelected === 2 ? "border-black" : "border-gray-300"
+              optionSelected === 2 ? "dark:border-gray-300 border-black" : ""
             }`}
           >
             <DollarSign />
@@ -213,8 +214,9 @@ export default function Payment() {
           <div className="mt-10 gap-4">
             <Link href="/payment/new_card">
               <button
+                id="button-add-card"
                 type="button"
-                className="h-20 items-center justify-center border-2 rounded-lg  w-full hover:bg-gray-200 mb-4 flex gap-2"
+                className="h-20 items-center justify-center border-2 rounded-lg  w-full hover:ring mb-4 flex gap-2"
               >
                 <Plus />
                 <h2>Adicionar cartão</h2>
