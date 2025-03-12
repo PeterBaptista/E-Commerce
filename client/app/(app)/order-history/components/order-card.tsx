@@ -1,7 +1,8 @@
 "use client";
 import { axiosApi } from "@/lib/axios-client";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Order {
   order_id: number;
@@ -27,66 +28,48 @@ interface OrderCardProps {
 
 const OrderCard: React.FC<OrderCardProps> = ({ order, onViewDetails }) => {
   const router = useRouter();
-  const [items, setItems] = useState<OrderItem[]>([]);
   const defaultImage =
     "https://www.shutterstock.com/image-vector/no-image-available-picture-coming-600nw-2057829641.jpg";
 
-  useEffect(() => {
-    const loadOrderItems = async () => {
-      try {
-        // Busca direta dos itens do pedido
-        // const orderResponse = await axiosApi.get(
-        //         `/product-order-history?order_id=${order.order_id}`
-        //       );
-        const orderResponse = await axiosApi.get(
-          `https://e-commerce-api-fnhq.onrender.com/product-order-history?order_id=${order.order_id}`
-        );
-        //console.log(orderResponse);
-        // const orderResponse = await axiosApi.get(
-        //   `http://localhost:3000/product-order-history?order_id=${order.order_id}`
-        // );
-
-        const orderItems = orderResponse.data;
-
-        if (!Array.isArray(orderItems)) return;
-
-        // Busca das informações dos produtos
-        const productRequests = orderItems.map(async (item) => {
-          try {
-            // const productResponse = await axiosApi.get(
+  const { data: items, isLoading, isError } = useQuery<OrderItem[]>({
+    queryKey: ["orderItems", order.order_id],
+    queryFn: async () => {
+      const orderResponse = await axiosApi.get(
+        `https://e-commerce-api-fnhq.onrender.com/product-order-history?order_id=${order.order_id}`
+      );
+      const orderItems = orderResponse.data;
+      if (!Array.isArray(orderItems)) return [];
+      const productRequests = orderItems.map(async (item: OrderItem) => {
+        try {
+          const productResponse = await axiosApi.get(
+            `https://e-commerce-api-fnhq.onrender.com/products/${item.product_id}`
+          );
+          // const productResponse = await axiosApi.get(
             //               '/products/${item.product_id}'
             //             );
-            const productResponse = await axiosApi.get(
-              `https://e-commerce-api-fnhq.onrender.com/products/${item.product_id}`
-            );
+            // const productResponse = await axiosApi.get(
+            //               `https://e-commerce-api-fnhq.onrender.com/products/${item.product_id}`
+            //             );
             // const productResponse = await axiosApi.get(
             //   `http://localhost:3000/products/${item.product_id}`
             // );
-            //console.log(productResponse);
-
-            return {
-              ...item,
-              product_name: productResponse.data.name,
-              image_url: productResponse.data.image_url,
-            };
-          } catch (error) {
-            return {
-              ...item,
-              product_name: "Produto não disponível",
-              image_url: defaultImage,
-            };
-          }
-        });
-
-        const completeItems = await Promise.all(productRequests);
-        setItems(completeItems.slice(0, 4));
-      } catch (err) {
-        console.error("Erro ao carregar itens:", err);
-      }
-    };
-
-    loadOrderItems();
-  }, [order.order_id]);
+          return {
+            ...item,
+            product_name: productResponse.data.name,
+            image_url: productResponse.data.image_url,
+          };
+        } catch (error) {
+          return {
+            ...item,
+            product_name: "Produto não disponível",
+            image_url: defaultImage,
+          };
+        }
+      });
+      const completeItems = await Promise.all(productRequests);
+      return completeItems.slice(0, 4);
+    },
+  });
 
   const navigateToOrderDetails = () => {
     router.push(`/product-order-history/${order.order_id}`);
@@ -127,7 +110,13 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onViewDetails }) => {
 
         {/* Product images */}
         <div className="flex gap-2">
-          {items.length > 0 ? (
+          {isLoading || isError || !items || items.length === 0 ? (
+            <img
+              src={defaultImage}
+              alt="Default image"
+              className="w-20 h-20 object-cover rounded-md"
+            />
+          ) : (
             items.map((item, index) => (
               <img
                 key={index}
@@ -136,12 +125,6 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onViewDetails }) => {
                 className="w-20 h-20 object-cover rounded-md"
               />
             ))
-          ) : (
-            <img
-              src="https://www.shutterstock.com/image-vector/no-image-available-picture-coming-600nw-2057829641.jpg"
-              alt="Default image"
-              className="w-20 h-20 object-cover rounded-md"
-            />
           )}
         </div>
       </div>

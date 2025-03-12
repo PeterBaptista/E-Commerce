@@ -87,7 +87,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import OrderCard from "./components/order-card";
 import axios from "axios";
-import { axiosApi } from "@/lib/axios-client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Order {
   order_id: number;
@@ -100,27 +100,25 @@ interface Order {
 const OrderHistoryPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        // const response = await axiosApi('/order-history');
-        // const response = await axios.get("http://localhost:3000/order-history");
-        const response = await axios.get("https://e-commerce-api-fnhq.onrender.com/order-history");
-        //setOrders(response.data); // Acesse os dados através de response.data
-        setRecentOrders(response.data.slice(0, 3)); // Atualize os pedidos recentes também
-      } catch (err) {
-        setError("Error loading orders.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data, isLoading, isError, error } = useQuery<Order[]>({
+    queryKey: ["orders"],
+    queryFn: async () => {
+      // const response = await axiosApi('/order-history');
+      // const response = await axios.get("http://localhost:3000/order-history");
+      // const response = await axios.get("https://e-commerce-api-fnhq.onrender.com/order-history");
+      const response = await axios.get("https://e-commerce-api-fnhq.onrender.com/order-history");
+      return response.data;
+    },
+  });
 
-    fetchOrders();
-  }, []);
+  useEffect(() => {
+    if (data) {
+      setOrders(data);
+      setRecentOrders(data.slice(0, 3));
+    }
+  }, [data]);
 
   const handleViewOrderDetails = async (orderId: number) => {
     try {
@@ -131,14 +129,15 @@ const OrderHistoryPage = () => {
       const response = await axios.get(
         `https://e-commerce-api-fnhq.onrender.com/product-order-history?order_id=${orderId}`
       );
-      //console.log("Order Items:", response);
+      // Aqui você pode manipular os detalhes do pedido se necessário
     } catch (err) {
-      setError("Error loading order details.");
+      console.error("Error loading order details.");
     }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
+  if (isLoading) return <p>Loading...</p>;
+  if (isError)
+    return <p>{error instanceof Error ? error.message : "Error loading orders."}</p>;
 
   return (
     <div className="container">
@@ -147,18 +146,18 @@ const OrderHistoryPage = () => {
         <h1 className="text-2xl font-bold text-center mb-4">Order History</h1>
         <h2 className="text-xl font-semibold text-center mb-2">Last Orders</h2>
         {Array.isArray(recentOrders) && recentOrders.length > 0 ? (
-            recentOrders.map((order) =>
-              order?.order_id ? (
-                <OrderCard
-                  key={order.order_id}
-                  order={order}
-                  onViewDetails={handleViewOrderDetails}
-                />
-              ) : null
-            )
-          ) : (
-            <p className="text-center text-gray-600 mt-4">No recent orders available.</p>
-          )}
+          recentOrders.map((order) =>
+            order?.order_id ? (
+              <OrderCard
+                key={order.order_id}
+                order={order}
+                onViewDetails={handleViewOrderDetails}
+              />
+            ) : null
+          )
+        ) : (
+          <p className="text-center text-gray-600 mt-4">No recent orders available.</p>
+        )}
         <button
           className="mt-4 px-6 py-3 text-lg font-medium text-white bg-green-600 rounded hover:bg-green-700 transition duration-300 block mx-auto w-full max-w-[200px]"
           onClick={() => setRecentOrders(orders)}
