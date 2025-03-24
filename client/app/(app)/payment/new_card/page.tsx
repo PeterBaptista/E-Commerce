@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -21,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { axiosApi } from "@/lib/axios-client";
+
+import { useMutation } from "@tanstack/react-query";
 
 export default function NewCardPage() {
   const [transactionType, setTransactionType] = useState("");
@@ -32,6 +36,8 @@ export default function NewCardPage() {
     year: "",
     cvc: "",
   });
+  const { toast } = useToast();
+  const router = useRouter();
 
   const months = [
     "Janeiro",
@@ -58,6 +64,13 @@ export default function NewCardPage() {
       month: String(months.indexOf(value) + 1).padStart(2, "0"),
     });
   };
+  
+  const newCardMutation = useMutation({
+    mutationFn: async (values: any) => {
+      const response = await axiosApi.post("/cards/new", values);
+      return response.data;
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -71,21 +84,26 @@ export default function NewCardPage() {
       transactionType: transactionType,
     };
 
-    console.log(requestBody);
-
-    const response = await axiosApi("/cards/new", {
-      method: "post",
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      data: JSON.stringify(requestBody),
-    });
-
-    if (response.status === 200) {
-      window.alert("Cartão cadastrado com sucesso!");
-      location.replace("/payment");
-    }
+    newCardMutation.mutate(
+      requestBody,
+      {
+        onSuccess: () => {
+          router.push("/payment");
+          toast({
+            title: "Cartão criado",
+            description: "O cartão foi criado com sucesso",
+            variant: "default",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Erro ao criar cartão",
+            description: "Ocorreu um erro ao criar o cartão",
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   return (

@@ -37,8 +37,9 @@ const data = {
 
     {
       title: "Cupons",
-      url: "#",
+      url: "/admin/coupons",
       icon: Tag,
+      isActive: true,
     },
 
     {

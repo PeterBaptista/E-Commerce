@@ -14,4 +14,30 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
-import './commands'
+import "./commands";
+import "cypress-file-upload";
+
+declare global {
+  namespace Cypress {
+    interface Chainable<Subject = any> {
+      /**
+       * Custom command to select DOM element by data-cy attribute.
+       * @example cy.dataCy('greeting')
+       */
+      dataCy(value: string): Chainable<JQuery<HTMLElement>>;
+      /**
+       * Custom command to upload a file
+       * @example cy.get('[data-cy=upload]').attachFile('example.json')
+       */
+      attachFile(fileName: string): Chainable<JQuery<HTMLElement>>;
+    }
+  }
+}
+
+// Add custom command for selecting elements by data-cy attribute
+Cypress.Commands.add(
+  "dataCy",
+  (value: string): Cypress.Chainable<JQuery<HTMLElement>> => {
+    return cy.get(`[data-cy=${value}]`);
+  }
+);

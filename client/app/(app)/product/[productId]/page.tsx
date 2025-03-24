@@ -11,20 +11,21 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { axiosApi } from "@/lib/axios-client";
 import { ProductType } from "@/modules/products/types/product-types";
 import { ItemsCarousel } from "@/modules/home/components/items-carousel";
 import { ProductCard } from "@/modules/home/components/product-card";
 import { Spinner } from "@/components/spinner";
+import { queryClient } from "@/providers/tanstack-query-provider";
 
 export default function ProductPage() {
   const { productId } = useParams();
   const { data, isLoading } = useQuery({
     queryKey: ["productQuery"],
     queryFn: async (): Promise<ProductType> => {
-      const response = await axiosApi(`/products/${productId}`);
+      const response = await axiosApi.get(`/products/${productId}`);
       return response.data;
     },
   });
@@ -32,12 +33,34 @@ export default function ProductPage() {
   const [selectedColor, setSelectedColor] = useState("black");
   const [selectedSize, setSelectedSize] = useState("m");
 
+  const { data: onCart, isLoading: onCartLoading } = useQuery({
+    queryKey: ["onCartQuery"],
+    queryFn: async (): Promise<ProductType> => {
+      const response = await axiosApi.get(`/shopping-cart/${productId}`);
+      return response.data;
+    },
+  });
+
+  const addCartMutate = useMutation({
+    mutationFn: async () => {
+      await axiosApi
+        .post(`/shopping-cart/add`, {
+          id: productId,
+          amount: quantity,
+        })
+        .then(() => {
+          queryClient.invalidateQueries({
+            queryKey: ["onCartQuery"],
+          });
+        });
+    },
+  });
+
   const { data: relatedProducts, isLoading: relatedProductsLoading } = useQuery(
     {
       queryKey: ["productsQuery"],
       queryFn: async (): Promise<ProductType[]> => {
         const response = await axiosApi("/products");
-
         return response.data;
       },
     }
@@ -128,31 +151,46 @@ export default function ProductPage() {
 
           <Separator />
 
-          {/* Quantity */}
-          <div>
-            <h2 className="mb-2 text-lg font-medium">Quantidade</h2>
-            <div className="flex items-center space-x-2">
+          {/* Quantity and Add to Cart */}
+          {!onCart || onCartLoading ? (
+            <>
+              <div>
+                <h2 className="mb-2 text-lg font-medium">Quantidade</h2>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={decrementQuantity}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center">{quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={incrementQuantity}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
               <Button
-                variant="outline"
-                size="icon"
-                onClick={decrementQuantity}
-                disabled={quantity <= 1}
+                className="flex-1 w-full"
+                size="lg"
+                disabled={onCartLoading || addCartMutate.isPending}
+                onClick={() => addCartMutate.mutate()}
               >
-                <Minus className="h-4 w-4" />
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Adicionar ao carrinho
               </Button>
-              <span className="w-8 text-center">{quantity}</span>
-              <Button variant="outline" size="icon" onClick={incrementQuantity}>
-                <Plus className="h-4 w-4" />
-              </Button>
+            </>
+          ) : (
+            <div className="flex-1 w-full h-12 flex items-center justify-center text-lg font-medium bg-green-100 text-green-700 rounded-md">
+              Produto no carrinho
             </div>
-          </div>
-
-          {/* Add to Cart */}
-
-          <Button className="flex-1 w-full" size="lg">
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            Adicionar ao carrinho
-          </Button>
+          )}
 
           {/* Product Status */}
           <div className="text-sm">

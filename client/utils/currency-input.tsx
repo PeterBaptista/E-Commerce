@@ -5,16 +5,19 @@ type CurrencyInputProps = {
   onChange: (value: number) => void;
 };
 
-export default function CurrencyInput({ value, onChange }: CurrencyInputProps) {
+export default function CurrencyInput({
+  value,
+  onChange,
+  ...props
+}: CurrencyInputProps) {
   return (
     <NumericFormat
+      {...props}
       value={value}
       onValueChange={(values) => onChange(values.floatValue || 0)}
       thousandSeparator="."
       decimalSeparator=","
       prefix="R$ "
-      decimalScale={2}
-      fixedDecimalScale
       allowNegative={false}
       className="border p-2 rounded-md w-full"
     />

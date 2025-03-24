@@ -14,9 +14,15 @@ interface Order {
   total_value: number | string;
 }
 
-const useOrders = () => {
-  return useQuery<Order[]>({
+const OrderHistoryPage = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [showAll, setShowAll] = React.useState(false);
+  const router = useRouter();
+  
+  const { data, isLoading, isError, error } = useQuery<Order[]>({
     queryKey: ["orders"],
+
     queryFn: async () => {
       const response = await axiosApi.get(`/order-history`);
       return response.data;
@@ -30,8 +36,14 @@ const OrderHistoryPage = () => {
   const [showAll, setShowAll] = React.useState(false);
   const displayedOrders = showAll ? orders : orders.slice(0, 3);
 
-  const handleViewOrderDetails = (orderId: number) => {
-    router.push(`/product-order-history/${orderId}`);
+  const handleViewOrderDetails = async (orderId: number) => {
+    try {
+      const response = await axiosApi.get(
+        `/product-order-history?order_id=${orderId}`
+      );
+    } catch (err) {
+      console.error("Error loading order details.");
+    }
   };
 
   if (isLoading) {
@@ -45,9 +57,10 @@ const OrderHistoryPage = () => {
     );
   }
 
-  if (isError) {
-    return <p>{error instanceof Error ? error.message : "Error loading orders."}</p>;
-  }
+  if (isError)
+    return (
+      <p>{error instanceof Error ? error.message : "Error loading orders."}</p>
+    );
 
   return (
     <div className="container">
@@ -59,12 +72,17 @@ const OrderHistoryPage = () => {
             <OrderCard key={order.order_id} order={order} onViewDetails={handleViewOrderDetails} />
           ))
         ) : (
-          <p className="text-center text-gray-600 mt-4">No recent orders available.</p>
+          <p className="text-center text-gray-600 mt-4">
+            No recent orders available.
+          </p>
         )}
-        {!showAll && orders.length > 3 && (
+        {!showAll && (
           <button
-            className="border border-300 mt-4 px-6 py-3 text-lg font-medium text-black bg-primary rounded hover:bg-secondary hover:text-white transition duration-300 block mx-auto w-full max-w-[200px]"
-            onClick={() => setShowAll(true)}
+            className="border border-300 mt-4 px-6 py-3 text-lg font-medium text-black bg-primary  rounded hover:bg-secondary hover:text-white transition duration-300 block mx-auto w-full max-w-[200px]"
+            onClick={() => {
+              setRecentOrders(orders);
+              setShowAll(true);
+            }} // Atualiza o estado para mostrar todos os pedidos
           >
             View All Orders
           </button>

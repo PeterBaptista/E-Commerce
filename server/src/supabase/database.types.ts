@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      "card-selected": {
+        Row: {
+          id_card: number
+          id_user: number
+        }
+        Insert: {
+          id_card: number
+          id_user?: number
+        }
+        Update: {
+          id_card?: number
+          id_user?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card-selected_id_card_fkey"
+            columns: ["id_card"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card-selected_id_user_fkey"
+            columns: ["id_user"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           card_type: string
@@ -21,6 +51,7 @@ export type Database = {
           id: number
           name: string
           nickname: string | null
+          transaction_type: string
         }
         Insert: {
           card_type: string
@@ -33,6 +64,7 @@ export type Database = {
           id?: number
           name: string
           nickname?: string | null
+          transaction_type: string
         }
         Update: {
           card_type?: string
@@ -45,6 +77,7 @@ export type Database = {
           id?: number
           name?: string
           nickname?: string | null
+          transaction_type?: string
         }
         Relationships: []
       }
@@ -217,11 +250,14 @@ export type Database = {
           category_id: number | null
           created_at: string
           description: string | null
+          discount: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
           name: string
           price: number
+          rating: number | null
+          reviewCount: number | null
           stock_quantity: number
           updated_at: string | null
         }
@@ -229,11 +265,14 @@ export type Database = {
           category_id?: number | null
           created_at?: string
           description?: string | null
+          discount?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           name: string
           price?: number
+          rating?: number | null
+          reviewCount?: number | null
           stock_quantity?: number
           updated_at?: string | null
         }
@@ -241,11 +280,14 @@ export type Database = {
           category_id?: number | null
           created_at?: string
           description?: string | null
+          discount?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           name?: string
           price?: number
+          rating?: number | null
+          reviewCount?: number | null
           stock_quantity?: number
           updated_at?: string | null
         }
@@ -284,6 +326,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      users: {
+        Row: {
+          admin: boolean
+          email: string | null
+          id: number
+          username: string
+        }
+        Insert: {
+          admin?: boolean
+          email?: string | null
+          id?: number
+          username: string
+        }
+        Update: {
+          admin?: boolean
+          email?: string | null
+          id?: number
+          username?: string
+        }
+        Relationships: []
       }
     }
     Views: {

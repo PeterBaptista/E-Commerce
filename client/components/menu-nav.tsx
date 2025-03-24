@@ -9,7 +9,7 @@ export const appRoutes = [
   { label: "Início", href: "/" },
   { label: "Pagamentos", href: "/payment" },
   { label: "Cupons", href: "/coupons" },
-  { label: "Carrinho de compras", href: "/shop-cart" },
+  { label: "Carrinho de compras", href: "/shopping-cart" },
   { label: "Histórico de pedidos", href: "/order-history" },
 ];
 

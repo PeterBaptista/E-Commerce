@@ -9,4 +9,10 @@ export const cardSchema = z.object({
 	transactionType: z.string().min(5).max(6),
 });
 
+export const cardSelectedSchema = z.object({
+	id_user: z.number(),
+	id_card: z.number(),
+});
+
 export type CardType = z.infer<typeof cardSchema>;
+export type cardSelectedType = z.infer<typeof cardSelectedSchema>;

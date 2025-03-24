@@ -36,17 +36,39 @@ import {
 } from "@/components/ui/table";
 import { axiosApi } from "@/lib/axios-client";
 import { cn } from "@/lib/utils";
-import { ProductType } from "@/modules/products/types/product-types";
-import { useQuery } from "@tanstack/react-query";
-import { DialogEditProduct } from "./product-edit-dialog";
-import { DialogCreateProduct } from "./product-create-dialog";
+import { CouponType } from "@/modules/products/types/coupons-types";
+import { DialogEditCoupon } from "./coupon-edit-dialog";
+import { DialogCreateCoupon } from "./coupon-create-dialog";
+import { queryClient } from "@/providers/tanstack-query-provider";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
-export function DataTableProducts() {
-  const [product, setProduct] = React.useState<ProductType>();
+export function DataTableCoupons() {
+  const [coupon, setCoupon] = React.useState<CouponType>();
   const [open, setOpen] = React.useState(false);
   const [createOpen, setCreateOpen] = React.useState(false);
+  
+  const {toast} = useToast();
 
-  const columns: ColumnDef<ProductType>[] = [
+  const deleteCoupon = useMutation({
+      mutationFn: async (codename: string) => {
+        const response = await axiosApi.delete(`/coupons/${codename}`);
+        return response.data;
+      },
+      onSuccess: () => {
+        setOpen(false);
+        queryClient.invalidateQueries({
+          queryKey: ["coupons-query"],
+        });
+        toast({
+          "title": "Cupom deletado", 
+          "description": "O cupom foi deletado com sucesso",
+          "variant": "destructive"
+        }) 
+      },
+    });
+
+  const columns: ColumnDef<CouponType>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -77,33 +99,39 @@ export function DataTableProducts() {
       ),
     },
     {
-      accessorKey: "is_active",
-      header: "Status",
-      cell: ({ row }) => (
-        <div
-          className={cn("capitalize", {
-            "text-green-500 dark:text-green-400": row.getValue("is_active"),
-            "text-red-500 dark:text-red-400": !row.getValue("is_active"),
-          })}
-        >
-          {row.getValue("is_active") ? "Ativo" : "Inativo"}
-        </div>
-      ),
+      accessorKey: "codename",
+      header: "Nome",
+      cell: ({ row }) => <div className="capitalize">{row.getValue("codename")}</div>,
     },
-
     {
-      accessorKey: "price",
-      header: () => <div className="text-right">Preço</div>,
+      accessorKey: "expiration_date",
+      header: "Data de expiração",
+      cell: ({ row }) =>
+        <div className="capitalize">
+          {row.getValue("expiration_date") || "Sem data de expiração"}
+        </div>
+    },
+  
+    {
+      accessorKey: "is_active",
+      header: "Está ativo?",
+      cell: ({ row }) =>
+        <div className="capitalize">
+          {row.getValue("expiration_date") || new Date() >= new Date() ? "Sim" : "Não"}
+        </div>
+    },
+  
+    {
+      accessorKey: "percentage",
+      header: () => <div className="text-right">Porcentagem</div>,
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("price"));
-
+        const amount = parseFloat(row.getValue("percentage"));
+  
         // Format the amount as a dollar amount
         const formatted = new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-          minimumFractionDigits: 2,
-        }).format(amount);
-
+          style: "percent"
+        }).format(amount/100);
+  
         return <div className="text-right font-medium">{formatted}</div>;
       },
     },
@@ -115,8 +143,8 @@ export function DataTableProducts() {
 
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild data-cy="product-actions">
-              <Button variant="ghost" className="h-8 w-8 p-0">
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0" data-cy="dropdown-menu-trigger">
                 <span className="sr-only">Open menu</span>
                 <MoreHorizontal />
               </Button>
@@ -127,17 +155,22 @@ export function DataTableProducts() {
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
-                data-cy="edit-product-button"
                 className="cursor-pointer"
                 onClick={() => {
-                  setProduct(row.original);
+                  setCoupon(row.original);
                   setOpen(true);
                 }}
+                data-cy="edit-coupon-button"
               >
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-yellow-500 dark:text-yellow-400 cursor-pointer">
-                Desativar
+              <DropdownMenuItem className="text-red-500 dark:text-red-400 cursor-pointer"
+                onClick={() => {
+                  deleteCoupon.mutate(row.original.codename);
+                }}
+                data-cy="delete-coupon-button"
+              >
+                Deletar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -153,9 +186,9 @@ export function DataTableProducts() {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const { data = [] } = useQuery({
-    queryKey: ["products-query"],
-    queryFn: async (): Promise<ProductType[]> => {
-      const response = await axiosApi("/products");
+    queryKey: ["coupons-query"],
+    queryFn: async (): Promise<CouponType[]> => {
+      const response = await axiosApi("/coupons");
 
       return response.data;
     },
@@ -181,24 +214,24 @@ export function DataTableProducts() {
 
   return (
     <>
-      <DialogCreateProduct setOpen={setCreateOpen} open={createOpen} />
-      <DialogEditProduct open={open} setOpen={setOpen} item={product} />
+      <DialogCreateCoupon setOpen={setCreateOpen} open={createOpen} />
+      <DialogEditCoupon open={open} setOpen={setOpen} item={coupon} />
       <div className="w-full">
         <div className="flex items-center justify-between py-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Produtos</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Cupons</h1>
             <p className="text-muted-foreground">
-              Gerencie seus produtos aqui. Você pode adicionar, editar ou
-              desativar produtos
+              Gerencie seus cupons aqui. Você pode adicionar, editar ou
+              desativar cupons
             </p>
           </div>
           <Button
             type="button"
             className="w-fit gap-2"
-            data-cy="create-product-button"
+            data-cy="create-coupon-button"
             onClick={() => setCreateOpen(true)}
           >
-            <PlusCircle /> Adicionar Produto
+            <PlusCircle /> Adicionar Cupom
           </Button>
         </div>
         <div className="rounded-md border">
@@ -221,14 +254,12 @@ export function DataTableProducts() {
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody data-cy="products-table">
+            <TableBody data-cy="coupons-table">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    data-cy-product-name={row.getValue("name")}
-                    data-id={row.original.id}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
