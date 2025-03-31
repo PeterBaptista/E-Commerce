@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import OrderCard from "./components/order-card";
 import { useQuery } from "@tanstack/react-query";
@@ -28,13 +28,13 @@ const OrderHistoryPage = () => {
       return response.data;
     },
   });
+};
 
-  useEffect(() => {
-    if (data) {
-      setOrders(data);
-      setRecentOrders(data.slice(0, 3));
-    }
-  }, [data]);
+const OrderHistoryPage = () => {
+  const router = useRouter();
+  const { data: orders = [], isLoading, isError, error } = useOrders();
+  const [showAll, setShowAll] = React.useState(false);
+  const displayedOrders = showAll ? orders : orders.slice(0, 3);
 
   const handleViewOrderDetails = async (orderId: number) => {
     try {
@@ -64,20 +64,13 @@ const OrderHistoryPage = () => {
 
   return (
     <div className="container">
-      {/* Order History */}
       <div className="p-4">
         <h1 className="text-2xl font-bold text-center mb-4">Order History</h1>
         <h2 className="text-xl font-semibold text-center mb-2">Last Orders</h2>
-        {Array.isArray(recentOrders) && recentOrders.length > 0 ? (
-          recentOrders.map((order) =>
-            order?.order_id ? (
-              <OrderCard
-                key={order.order_id}
-                order={order}
-                onViewDetails={handleViewOrderDetails}
-              />
-            ) : null
-          )
+        {displayedOrders.length > 0 ? (
+          displayedOrders.map((order) => (
+            <OrderCard key={order.order_id} order={order} onViewDetails={handleViewOrderDetails} />
+          ))
         ) : (
           <p className="text-center text-gray-600 mt-4">
             No recent orders available.
@@ -95,9 +88,7 @@ const OrderHistoryPage = () => {
           </button>
         )}
         {orders.length === 0 && (
-          <p className="text-center text-gray-600 mt-4">
-            You haven't placed any orders yet.
-          </p>
+          <p className="text-center text-gray-600 mt-4">You haven't placed any orders yet.</p>
         )}
       </div>
     </div>
